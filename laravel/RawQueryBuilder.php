@@ -1,5 +1,5 @@
 <?php
-namespace App\Http\Helpers;
+namespace App\Helpers;
 
 /*
   MIT License
@@ -38,8 +38,14 @@ class RawQueryBuilder {
   private $ofs = null;
   private $gr = array();
 
-  public function __construct($table) {
+  private $table = null;
+  private $primaryKey = "id";
+
+  public function __construct($table, $primaryKey = null) {
+    $this->table = $table;
     $this->fr = "FROM " . $table;
+    
+    if ($primaryKey) $this->primaryKey = $primaryKey;
   }
 
   public function select($lists, $params = array()) {
@@ -151,6 +157,15 @@ class RawQueryBuilder {
     $this->ofs = $offset;
   }
 
+  private function _generateWhereQuery(&$query, &$bindings) {
+    if ($this->wh['query'] !== null) {
+      $query .= " " . $this->wh['query'] . " ";
+      foreach ($this->wh['params'] as $p) {
+        $bindings[] = $p;
+      }
+    }
+  }
+
   private function __generateSql($limit = true) {
     $params = array();
     
@@ -163,12 +178,7 @@ class RawQueryBuilder {
       $query .= $leftJoins . " ";
     }
 
-    if ($this->wh['query'] !== null) {
-      $query .= $this->wh['query'] . " ";
-      foreach ($this->wh['params'] as $p) {
-        $params[] = $p;
-      }
-    }
+    $this->_generateWhereQuery($query, $params);
 
     if (count($this->gr) > 0) {
       $groups = implode(", ", $this->gr);
@@ -237,6 +247,21 @@ class RawQueryBuilder {
         "last_page" => ceil($count / $limit)
       ]
     ];
+  }
+
+  public function update (Array $data) {
+    $query = "UPDATE {$this->table} SET ";
+
+    $sets = [];
+    $bindings = [];
+    foreach ($data as $column => $value) {
+      array_push($sets, "{$column} = ?");
+      array_push($bindings, $value);
+    }
+
+    $query .= implode(", ", $sets);
+    $this->_generateWhereQuery($query, $bindings);
+    DB::update($query, $bindings);
   }
 
   public function toSql() {
