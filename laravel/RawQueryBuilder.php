@@ -41,6 +41,10 @@ class RawQueryBuilder {
   private $table = null;
   private $primaryKey = "id";
 
+  public static function table($table, $primaryKey = null) {
+    return (new self($table, $primaryKey));
+  }
+
   public function __construct($table, $primaryKey = null) {
     $this->table = $table;
     $this->fr = "FROM " . $table;
