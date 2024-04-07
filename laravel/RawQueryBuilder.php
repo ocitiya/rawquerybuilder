@@ -344,4 +344,20 @@ class RawQueryBuilder {
     public function toSql() {
         return $this->__generateSql();
     }
+
+    public function clone() {
+        $clone = new RawQueryBuilder($this->table, $this->primaryKey);
+        $clone->sl = clone $this->sl;
+        $clone->fr = $this->fr;
+        $clone->lj = $this->lj;
+        $clone->wh = $this->wh;
+        $clone->od = $this->od;
+        $clone->lm = $this->lm;
+        $clone->ofs = $this->ofs;
+        $clone->gr = $this->gr;
+        $clone->set = $this->set;
+    
+        return $clone;
+    }
+    
 }
