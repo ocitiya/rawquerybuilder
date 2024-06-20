@@ -31,7 +31,8 @@ use Illuminate\Support\Facades\DB;
 class RawQueryBuilder {
     private $sl;
     private $fr;
-    private $lj = array();
+    private $lj;
+    private $j;
     private $wh = array("query" => null, "params" => array());
     private $od = array();
     private $lm = null;
@@ -48,6 +49,8 @@ class RawQueryBuilder {
 
     public function __construct($table, $primaryKey = null) {
         $this->sl = (object) ["query" => [], "params" => []];
+        $this->lj = (object) ["query" => [], "params" => []];
+        $this->j = (object) ["query" => [], "params" => []];
 
         $this->table = $table;
         $this->fr = "FROM " . $table;
@@ -138,19 +141,49 @@ class RawQueryBuilder {
         if (is_array($lists)) {
             foreach ($lists as $item) {
                 $query = "LEFT JOIN $item";
-                if (!in_array($query, $this->lj)) {
-                    $this->lj[] = $query;
+                if (!in_array($query, $this->lj->query)) {
+                    $this->lj->query[] = $query;
                 }
             }
         } else {
             $query = "LEFT JOIN $lists";
-            if (!in_array($query, $this->lj)) {
-                $this->lj[] = $query;
+            if (!in_array($query, $this->lj->query)) {
+                $this->lj->query[] = $query;
             }
         }
 
-        foreach ($params as $p) {
-            $this->wh['params'][] = $p;
+        if (!is_array($params)) {
+            $this->lj->params[] = $params;
+        } else {
+            foreach ($params as $p) {
+                $this->lj->params[] = $p;
+            }
+        }
+        
+        return $this;
+    }
+
+    public function join($lists, $params = array()) {
+        if (is_array($lists)) {
+            foreach ($lists as $item) {
+                $query = "JOIN $item";
+                if (!in_array($query, $this->j->query)) {
+                    $this->j->query[] = $query;
+                }
+            }
+        } else {
+            $query = "JOIN $lists";
+            if (!in_array($query, $this->j->query)) {
+                $this->j->query[] = $query;
+            }
+        }
+
+        if (!is_array($params)) {
+            $this->j->params[] = $params;
+        } else {
+            foreach ($params as $p) {
+                $this->j->params[] = $p;
+            }
         }
         
         return $this;
@@ -214,16 +247,19 @@ class RawQueryBuilder {
         if (count($this->sl->query) == 0) $this->sl->query = ["*"];
         $selects = implode(", ", $this->sl->query);
         $query .= "SELECT " . $selects . " " . $this->fr . " ";
+        foreach($this->sl->params as $p) { $params[] = $p; }
 
-        foreach($this->sl->params as $p) {
-            $params[] = $p;
-        }
-        
-
-        if (count($this->lj) > 0) {
-            $leftJoins = implode(" ", $this->lj);
+        if (count($this->lj->query) > 0) {
+            $leftJoins = implode(" ", $this->lj->query);
             $query .= $leftJoins . " ";
         }
+        foreach($this->lj->params as $p) { $params[] = $p; }
+
+        if (count($this->j->query) > 0) {
+            $joins = implode(" ", $this->j->query);
+            $query .= $joins . " ";
+        }
+        foreach($this->j->params as $p) { $params[] = $p; }
 
         $this->_generateWhereQuery($query, $params);
 
@@ -322,7 +358,13 @@ class RawQueryBuilder {
 
         $query .= implode(", ", $sets);
         $this->_generateWhereQuery($query, $bindings);
-        DB::update($query, $bindings);
+        return DB::update($query, $bindings);
+    }
+
+    public function delete () {
+        $query = "DELETE FROM {$this->table} ";
+        $this->_generateWhereQuery($query, $bindings);
+        return DB::update($query, $bindings);
     }
 
     public function insert(Array $data) {
@@ -338,7 +380,7 @@ class RawQueryBuilder {
     
         $query .= "(" . implode(", ", $columns) . ") VALUES (" . rtrim(str_repeat("?, ", count($columns)), ', ') . ")";
       
-        DB::insert($query, $bindings);
+        return DB::insert($query, $bindings);
     }
 
     public function toSql() {
