@@ -203,7 +203,12 @@ class QueryBuilder:
     new_instance = QueryBuilder(self.table)
 
     for key, value in self.__dict__.items():
-      if key == '_wh':
+      if key == '_sl':
+        new_instance.__dict__['_sl'] = {
+          "query": self._sl['query'][:],
+          "params": self._sl['params'][:]
+        }
+      elif key == '_wh':
         new_instance.__dict__['_wh'] = {
           "query": self._wh['query'][:],
           "params": self._wh['params'][:]
