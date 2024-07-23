@@ -1,3 +1,8 @@
+# MIT License
+
+# Copyright (c) 2023 Muhammad Rasyidi
+# https://github.com/ocitiya/rawquerybuilder
+
 from .db import DB
 from .helper import Helper
 
