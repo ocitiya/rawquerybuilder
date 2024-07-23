@@ -14,7 +14,7 @@ class QueryBuilder:
   def __init__(self, table, params=[]):
     self.table = table
     self._ct = []
-    self._sl = []
+    self._sl = {"query": [], "params": []}
     self._fr = "FROM " + table
     self._lj = []
     self._jn = []
@@ -40,13 +40,13 @@ class QueryBuilder:
     if type(lists) == list:
       for item in lists:
         if not helper.inList(self._sl, item):
-          self._sl.append(item)
+          self._sl['query'].append(item)
     else:
       if not helper.inList(self._sl, lists):
-          self._sl.append(lists)
+          self._sl['query'].append(lists)
     
     for p in params:
-      self._wh['params'].append(p)
+      self.sl['params'].append(p)
 
     return self
 
@@ -142,8 +142,10 @@ class QueryBuilder:
         else: query += " "
 
     selects = "*"
-    if len(self._sl) > 0: selects = ", ".join(self._sl)
+    if len(self._sl['query']) > 0: selects = ", ".join(self._sl['query'])
     query += "SELECT " + selects + " " + self._fr + " "
+    for p in self.sl['params']:
+      params.append(p)
 
     if len(self._jn) > 0:
       joins = " ".join(self._jn)
